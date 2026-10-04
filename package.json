@@ -1,0 +1,14 @@
+{
+  "name": "messmate-ai",
+  "version": "1.0.0",
+  "description": "MessMate — AI-powered hostel mess management system",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix server --legacy-peer-deps && npm install --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev:ai": "cd ai-service && uvicorn main:app --reload --port 8000",
+    "seed": "npm run seed --prefix server"
+  },
+  "workspaces": ["client", "server"]
+}
