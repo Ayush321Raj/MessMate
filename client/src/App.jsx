@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import LandingPage from './pages/LandingPage';
 
 // Student pages
 import StudentLayout from './layouts/StudentLayout';
@@ -43,8 +44,8 @@ function ProtectedRoute({ children, allowedRoles }) {
 }
 
 function RoleRedirect() {
-  const { user } = useSelector((s) => s.auth);
-  if (!user) return <Navigate to="/login" replace />;
+  const { user, token } = useSelector((s) => s.auth);
+  if (!token || !user) return <LandingPage />;
   if (user.role === 'admin') return <Navigate to="/admin" replace />;
   if (user.role === 'kitchen') return <Navigate to="/kitchen" replace />;
   return <Navigate to="/student" replace />;
