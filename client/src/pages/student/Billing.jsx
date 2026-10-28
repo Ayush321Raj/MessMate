@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useSelector } from 'react-redux';
 import api from '../../api/axios';
+import { socketUrl } from '../../api/config';
 import toast from 'react-hot-toast';
 
 const STATUS_COLORS = { pending: 'badge-amber', paid: 'badge-green', overdue: 'badge-red' };
@@ -15,7 +16,7 @@ export default function StudentBilling() {
   useEffect(() => {
     let ledgerLoaded = false;
     const pendingEntries = [];
-    const socket = io('/', { auth: { token } });
+    const socket = io(socketUrl, { auth: { token } });
     socket.on('billing:entry', ({ entry }) => {
       if (!ledgerLoaded) {
         pendingEntries.push(entry);

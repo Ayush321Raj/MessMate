@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useSelector } from 'react-redux';
 import api from '../../api/axios';
+import { socketUrl } from '../../api/config';
 import toast from 'react-hot-toast';
 
 const MEAL_ICONS = { breakfast: '☀️', lunch: '🌤️', dinner: '🌙' };
@@ -29,7 +30,7 @@ export default function KitchenDashboard() {
 
   useEffect(() => {
     if (!token) return;
-    const socket = io('/', { auth: { token } });
+    const socket = io(socketUrl, { auth: { token } });
     socket.emit('join:kitchen', 'all');
     socket.on('headcount:update', ({ mealId, actualHeadcount }) => {
       setHeadcounts((prev) => ({ ...prev, [mealId]: actualHeadcount }));

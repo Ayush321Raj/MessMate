@@ -173,6 +173,93 @@ MongoDB Atlas    FastAPI AI Service (:8000)
 
 ---
 
+## ☁️ Free Deployment (Vercel + Render + MongoDB Atlas)
+
+This layout deploys the Vite frontend to Vercel, the Express API and FastAPI forecasting service to Render, and MongoDB to Atlas. The free hosting plans are suitable for demos and learning, not production workloads. Render free web services sleep after 15 minutes without traffic, may take about a minute to wake, and have an ephemeral filesystem. Render's free instance hours are shared by services in a workspace, so two always-on services can exceed the monthly allowance. Check the current [Render free plan limitations](https://render.com/docs/free) before deploying.
+
+### 1. Push the project to GitHub
+
+Commit and push the project to a GitHub repository that you can connect to both Vercel and Render. Never commit `.env` files or put secrets in frontend variables; `VITE_*` variables are included in the public browser bundle.
+
+### 2. Create MongoDB Atlas database
+
+1. Create a free Atlas cluster and a database user with a strong, unique password.
+2. In Atlas Network Access, allow connections from Render. If you use `0.0.0.0/0` because Render's outbound IP is not fixed, use a unique database password and restrict the database user's permissions.
+3. Copy the Atlas connection string and replace its username, password, and database name. URL-encode special characters in the username or password.
+
+### 3. Deploy the FastAPI AI service on Render
+
+Create a **Web Service** from the repository with:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `ai-service` |
+| Runtime | Python |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
+| Health Check Path | `/health` |
+| Instance Type | Free |
+
+After deployment, copy the service's public HTTPS URL (for example `https://messmate-ai.onrender.com`). The forecasting API calls this service from the Node backend.
+
+### 4. Deploy the Express API on Render
+
+Create another **Web Service** from the same repository:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `server` |
+| Runtime | Node |
+| Build Command | `npm ci` |
+| Start Command | `npm start` |
+| Health Check Path | `/health` |
+| Instance Type | Free |
+
+Set these environment variables in the Render service's **Environment** settings:
+
+| Variable | Value |
+|---|---|
+| `MONGO_URI` | Atlas connection string |
+| `JWT_SECRET` | A long, random secret; do not reuse the example value |
+| `JWT_EXPIRES_IN` | `7d` |
+| `CLIENT_URL` | Your Vercel production URL, e.g. `https://messmate.vercel.app` |
+| `AI_SERVICE_URL` | Public HTTPS URL of the Render AI service, without a trailing slash |
+
+Set `PORT` only if Render asks for it; the server already uses Render's assigned `PORT`. Add Cloudinary variables if using image uploads, SMTP variables if using email, or `OPENAI_API_KEY` if enabling the external assistant provider. These integrations are optional.
+
+Copy the API's public HTTPS URL after its first successful deploy. Its `/health` endpoint should return `{"status":"ok","service":"messmate-api"}`.
+
+### 5. Deploy the Vite frontend on Vercel
+
+Import the same GitHub repository as a Vercel project:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `client` |
+| Framework Preset | Vite |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+
+Set this environment variable for **Production** (and Preview too, if using Vercel preview deployments):
+
+| Variable | Value |
+|---|---|
+| `VITE_API_URL` | Render API origin, e.g. `https://messmate-api.onrender.com` (no trailing slash and no `/api`) |
+
+The client uses this origin for both `/api` requests and Socket.IO connections. Leave `VITE_API_URL` empty for local development so the existing Vite proxy continues to work. `client/vercel.json` sends client-side routes back to the SPA entry point so refreshing a nested route works.
+
+### 6. Connect the deployed services and verify
+
+1. Copy your Vercel production URL into the API's Render `CLIENT_URL`. It must match the browser origin exactly, including `https://`; save the variable and redeploy the API.
+2. Confirm `VITE_API_URL` points to the API service, not the AI service, then redeploy the Vercel project after setting or changing it.
+3. Visit the Vercel site, refresh `/login`, and sign in. Check that API calls succeed in the browser's Network panel.
+4. Test a real-time kitchen headcount or billing update to verify Socket.IO as well as ordinary HTTP requests.
+5. Test forecasting after the AI service has woken up. The first call may be slow because free Render services sleep when idle.
+
+Do not use the documented demo credentials on a public deployment. If you intentionally seed a demo database, change or remove the preset accounts and passwords before sharing the site.
+
+---
+
 ## 🔑 API Reference
 
 ### Auth
