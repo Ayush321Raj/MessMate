@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import api from '../../api/axios';
+import { toLocalDateString } from '../../utils/date';
 import toast from 'react-hot-toast';
 
 const MEAL_ICONS = { breakfast: '☀️', lunch: '🌤️', dinner: '🌙' };
 
 export default function KitchenScanner() {
   const [meals, setMeals] = useState([]);
+  const [mealsLoading, setMealsLoading] = useState(true);
+  const [mealsError, setMealsError] = useState('');
   const [selectedMealId, setSelectedMealId] = useState('');
   const [scanning, setScanning] = useState(false);
   const [lastResult, setLastResult] = useState(null);
@@ -17,13 +20,21 @@ export default function KitchenScanner() {
   const html5QrRef = useRef(null);
 
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    api.get('/meals', { params: { startDate: today, endDate: today } })
-      .then((r) => {
-        const m = r.data.meals || [];
+    const fetchTodayMeals = async () => {
+      try {
+        const today = toLocalDateString();
+        const { data } = await api.get('/meals', { params: { startDate: today, endDate: today } });
+        const m = data.meals || [];
         setMeals(m);
         if (m.length > 0) setSelectedMealId(m[0]._id);
-      });
+      } catch (err) {
+        setMealsError(err.response?.data?.message || "Unable to load today's meals.");
+      } finally {
+        setMealsLoading(false);
+      }
+    };
+
+    fetchTodayMeals();
   }, []);
 
   const startScanner = async () => {
@@ -99,13 +110,18 @@ export default function KitchenScanner() {
           value={selectedMealId}
           onChange={(e) => { setSelectedMealId(e.target.value); stopScanner(); setLastResult(null); }}
         >
-          {meals.length === 0 && <option>No meals today</option>}
+          {meals.length === 0 && (
+            <option value="">
+              {mealsLoading ? 'Loading meals…' : mealsError ? 'Meals unavailable' : 'No meals today'}
+            </option>
+          )}
           {meals.map((m) => (
             <option key={m._id} value={m._id}>
               {MEAL_ICONS[m.mealType]} {m.mealType.charAt(0).toUpperCase() + m.mealType.slice(1)} — {new Date(m.date).toDateString()}
             </option>
           ))}
         </select>
+        {mealsError && <p className="text-sm text-red-600 mt-2">{mealsError}</p>}
       </div>
 
       {/* Method tabs */}

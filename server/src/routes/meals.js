@@ -17,7 +17,11 @@ router.get('/', protect, async (req, res, next) => {
     if (startDate || endDate) {
       filter.date = {};
       if (startDate) filter.date.$gte = new Date(startDate);
-      if (endDate) filter.date.$lte = new Date(endDate);
+      if (endDate) {
+        const endDateExclusive = new Date(endDate);
+        endDateExclusive.setUTCDate(endDateExclusive.getUTCDate() + 1);
+        filter.date.$lt = endDateExclusive;
+      }
     }
     if (mealType) filter.mealType = mealType;
 

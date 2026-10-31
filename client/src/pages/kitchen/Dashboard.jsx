@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import { useSelector } from 'react-redux';
 import api from '../../api/axios';
 import { socketUrl } from '../../api/config';
+import { toLocalDateString } from '../../utils/date';
 import toast from 'react-hot-toast';
 
 const MEAL_ICONS = { breakfast: '☀️', lunch: '🌤️', dinner: '🌙' };
@@ -14,18 +15,26 @@ export default function KitchenDashboard() {
   const [headcounts, setHeadcounts] = useState({});
   const [forecasts, setForecasts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    api.get('/meals', { params: { startDate: today, endDate: today } })
-      .then((r) => {
-        const meals = r.data.meals || [];
+    const fetchTodayMeals = async () => {
+      try {
+        const today = toLocalDateString();
+        const { data } = await api.get('/meals', { params: { startDate: today, endDate: today } });
+        const meals = data.meals || [];
         setTodayMeals(meals);
         const hc = {};
         meals.forEach((m) => { hc[m._id] = m.actualHeadcount || 0; });
         setHeadcounts(hc);
-      })
-      .finally(() => setLoading(false));
+      } catch (err) {
+        setLoadError(err.response?.data?.message || "Unable to load today's meals.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTodayMeals();
   }, []);
 
   useEffect(() => {
@@ -67,6 +76,8 @@ export default function KitchenDashboard() {
 
       {loading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="card animate-pulse h-28 bg-gray-100"/>)}</div>
+      ) : loadError ? (
+        <div className="card text-center py-8 text-red-600">{loadError}</div>
       ) : todayMeals.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
           <p className="text-3xl mb-2">🍽️</p>
