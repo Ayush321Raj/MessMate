@@ -69,8 +69,11 @@ router.post(
       if (scanMethod === 'qr') {
         // Find optin by QR token
         optin = await Optin.findOne({ qrToken: tokenOrCardId }).populate('student');
+        student = optin?.student || null;
         if (!optin) {
           denialReason = 'Invalid QR token.';
+        } else if (!student) {
+          denialReason = 'Student account not found.';
         } else if (optin.meal.toString() !== mealId) {
           denialReason = 'QR token does not match this meal.';
         } else if (optin.status !== 'opted-in') {
@@ -79,7 +82,6 @@ router.post(
           attendanceStatus = 'duplicate';
           denialReason = 'QR token already used.';
         } else {
-          student = optin.student;
           attendanceStatus = 'success';
         }
       } else if (scanMethod === 'rfid') {

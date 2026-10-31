@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const attendanceSchema = new mongoose.Schema(
   {
-    student: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    student: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     meal: { type: mongoose.Schema.Types.ObjectId, ref: 'Meal', required: true },
     optin: { type: mongoose.Schema.Types.ObjectId, ref: 'Optin' },
     scanMethod: { type: String, enum: ['qr', 'rfid'], required: true },
